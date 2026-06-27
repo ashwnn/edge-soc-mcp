@@ -81,10 +81,12 @@ bun install
 # 2. Log in and create backing resources
 bun x wrangler login
 bun x wrangler kv namespace create CACHE
-bun x wrangler d1 create edge_soc
-bun x wrangler r2 bucket create edge-soc-corpora
+bun x wrangler d1 create edge-soc-mcp-db
+bun x wrangler r2 bucket create edge-soc-mcp-corpora
 
 # 3. Paste the returned IDs into wrangler.jsonc, then generate types
+# wrangler types generates worker-configuration.d.ts from your bindings.
+# Re-run it any time wrangler.jsonc changes.
 bun x wrangler types
 
 # 4. Seed corpora into R2 and deploy
@@ -129,6 +131,8 @@ Point your client at the deployed `/mcp` URL as a streamable HTTP endpoint:
 Legacy SSE clients can use `/sse`. If `MCP_AUTH_TOKEN` is set, both endpoints require `Authorization: Bearer <token>`.
 
 ## Local development
+
+This project uses Wrangler-generated runtime types (`wrangler types`) rather than `@cloudflare/workers-types`. The generated `worker-configuration.d.ts` is gitignored, so you must generate it before running type checks or tests.
 
 ```bash
 bun install

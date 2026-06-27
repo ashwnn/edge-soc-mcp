@@ -108,25 +108,25 @@ Add the following to your configuration file in your kv_namespaces array:
 
 **D1 database** (a SQLite database):
 ```bash
-bun x wrangler d1 create edge_soc
+bun x wrangler d1 create edge-soc-mcp-db
 ```
 
 The output will look like this. Copy the `database_id` value:
 ```
-Successfully created DB 'edge_soc'
+Successfully created DB 'edge-soc-mcp-db'
 
 [[d1_databases]]
 binding = "DB"
-database_name = "edge_soc"
+database_name = "edge-soc-mcp-db"
 database_id = "a1b2c3d4-e5f6-..."
 ```
 
 **R2 bucket** (object storage for corpus files):
 ```bash
-bun x wrangler r2 bucket create edge-soc-corpora
+bun x wrangler r2 bucket create edge-soc-mcp-corpora
 ```
 
-This one does not return an ID; just confirm it says "Created bucket 'edge-soc-corpora'".
+This one does not return an ID; just confirm it says "Created bucket 'edge-soc-mcp-corpora'".
 
 KV docs: [https://developers.cloudflare.com/kv/get-started/](https://developers.cloudflare.com/kv/get-started/)  
 D1 docs: [https://developers.cloudflare.com/d1/get-started/](https://developers.cloudflare.com/d1/get-started/)
@@ -167,7 +167,7 @@ Next, find the `d1_databases` section and replace the `"database_id"` placeholde
   {
     "binding": "DB",
     "database_id": "placeholder",
-    "database_name": "edge_soc"
+    "database_name": "edge-soc-mcp-db"
   }
 ],
 ```
@@ -178,7 +178,7 @@ Next, find the `d1_databases` section and replace the `"database_id"` placeholde
   {
     "binding": "DB",
     "database_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "database_name": "edge_soc"
+    "database_name": "edge-soc-mcp-db"
   }
 ],
 ```
@@ -187,9 +187,9 @@ Save the file.
 
 ---
 
-## Step 9 - Generate TypeScript types (optional but recommended)
+## Step 9 - Generate TypeScript types
 
-This step generates type definitions that match your Cloudflare resource bindings. It is not strictly required to deploy, but it catches configuration mismatches early:
+This step generates `worker-configuration.d.ts`, which gives TypeScript accurate types for your Cloudflare bindings. It is required before running `bun run typecheck`, and should be re-run any time you change `wrangler.jsonc`:
 
 ```bash
 bun x wrangler types
@@ -328,7 +328,7 @@ bun x wrangler deploy
 
 **"Error: D1 database not found"** - Same as above; verify the `database_id` in `wrangler.jsonc`. D1 IDs are UUID-formatted (hyphenated).
 
-**"R2 bucket does not exist"** - Confirm that R2 is active on your account (Step 6) and that the bucket creation in Step 7 succeeded without errors.
+**"R2 bucket does not exist"** - Confirm that R2 is active on your account (Step 6) and that the bucket `edge-soc-mcp-corpora` was created successfully in Step 7.
 
 **The `/health` endpoint returns `corpora: { loaded: false }`** - The R2 seed did not complete. Run `bun run seed` again, watch for any error messages, and redeploy afterward.
 
