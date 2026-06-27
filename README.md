@@ -1,6 +1,6 @@
 # edge-soc-mcp
 
-A Cloudflare Workers [MCP](https://modelcontextprotocol.io) server that puts a SOC analyst's enrichment, investigation, and detection-context workflow behind a single endpoint — and runs on a free Cloudflare account.
+A Cloudflare Workers [MCP](https://modelcontextprotocol.io) server that puts a SOC analyst's enrichment, investigation, and detection-context workflow behind a single endpoint, and runs on a free Cloudflare account.
 
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -11,7 +11,7 @@ A Cloudflare Workers [MCP](https://modelcontextprotocol.io) server that puts a S
 
 ## Why it's built this way
 
-- **One tool per task, not one tool per vendor.** `ip_lookup` fans out across AbuseIPDB, GreyNoise, Shodan, IPinfo, and more, then returns a single verdict — not five raw API payloads for you to reconcile.
+- **One tool per task, not one tool per vendor.** `ip_lookup` fans out across AbuseIPDB, GreyNoise, Shodan, IPinfo, and more, then returns a single verdict instead of five raw API payloads for you to reconcile.
 - **Free by default.** Runs entirely on Cloudflare's free tier (Workers, Durable Objects, KV, D1, R2, cron). Every paid or keyed source is optional.
 - **Degrades cleanly.** A missing API key just marks that source `auth_missing`; the tool still answers with whatever is available.
 - **Verdict separated from evidence.** Every tool returns the same normalized envelope, so an agent gets a clear answer *and* the operational notes behind it.
@@ -94,7 +94,7 @@ bun x wrangler deploy
 
 ### Optional secrets
 
-The server runs without any keys — each one just unlocks more sources. Set the ones you want:
+The server runs without any keys. Each one just unlocks more sources. Set the ones you want:
 
 ```bash
 bun x wrangler secret put MCP_AUTH_TOKEN      # bearer guard for /mcp and /sse
@@ -183,8 +183,8 @@ bun run typecheck && bun test && bun x wrangler deploy --dry-run --outdir dist
 
 - Have I Been Pwned breach API: [key purchase](https://haveibeenpwned.com/API/Key)
 - Spur Context: [pricing](https://spur.us/)
-- VirusTotal Public API: [signup](https://www.virustotal.com/) — non-commercial and rate-limited
-- Shodan InternetDB — non-commercial
+- VirusTotal Public API ([signup](https://www.virustotal.com/)): non-commercial and rate-limited
+- Shodan InternetDB: non-commercial
 
 </details>
 
@@ -203,7 +203,7 @@ Larger corpora are loaded with `bun run seed`. Re-run it to refresh ATT&CK, Sigm
 ## Implementation notes
 
 - `McpAgent` is bound to a SQLite Durable Object via `new_sqlite_classes`, the state path that stays free-plan compatible.
-- The Cloudflare free tier currently supports Durable Objects, KV, D1, R2, and cron — everything this server needs.
+- The Cloudflare free tier currently supports Durable Objects, KV, D1, R2, and cron, which is everything this server needs.
 
 ## Non-goals
 
