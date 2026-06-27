@@ -1,60 +1,60 @@
 {
-  // edge-soc-mcp - Wrangler configuration
-  // Before deploying: replace all "placeholder" IDs with real resource IDs.
-  // Create resources with: wrangler kv namespace create CACHE
-  //                        wrangler d1 create edge_soc
-  //                        wrangler r2 bucket create edge-soc-corpora
-  //                        wrangler secret put <SECRET_NAME>
-  "name": "edge-soc-mcp",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-05-01",
-  "compatibility_flags": ["nodejs_compat"],
-
-  // Durable Object binding - McpAgent requires new_sqlite_classes migration
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "MCP_OBJECT",
-        "class_name": "EdgeSocMCP"
-      }
-    ]
-  },
-
-  // Migration: new_sqlite_classes is required for McpAgent's SQLite-backed DO
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["EdgeSocMCP"]
-    }
-  ],
-
-  // KV: short-TTL verdict cache + feed catalogs (CISA KEV, OpenPhish set)
-  "kv_namespaces": [
-    {
-      "binding": "CACHE",
-      "id": "placeholder"
-    }
-  ],
-
-  // D1: best-effort audit/usage metadata
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_id": "placeholder",
-      "database_name": "edge_soc"
-    }
-  ],
-
-  // R2: slim corpus indexes (ATT&CK, Sigma, LOLBAS, GTFOBins, HijackLibs, WADComs, SSLBL feeds)
-  "r2_buckets": [
-    {
-      "binding": "CORPORA",
-      "bucket_name": "edge-soc-corpora"
-    }
-  ],
-
-  // Cron: refresh catalogs/corpora every 6 hours
-  "triggers": {
-    "crons": ["0 */6 * * *"]
-  }
+	// edge-soc-mcp - Wrangler configuration
+	// Before deploying: replace all "placeholder" IDs with real resource IDs.
+	// Create resources with: wrangler kv namespace create CACHE
+	//                        wrangler d1 create edge-soc-mcp-db
+	//                        wrangler r2 bucket create edge-soc-mcp-corpora
+	//                        wrangler secret put <SECRET_NAME>
+	"name": "edge-soc-mcp",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-05-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// Durable Object binding - McpAgent requires new_sqlite_classes migration
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "MCP_OBJECT",
+				"class_name": "EdgeSocMCP"
+			}
+		]
+	},
+	// Migration: new_sqlite_classes is required for McpAgent's SQLite-backed DO
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"EdgeSocMCP"
+			]
+		}
+	],
+	// KV: short-TTL verdict cache + feed catalogs (CISA KEV, OpenPhish set)
+	"kv_namespaces": [
+		{
+			"binding": "CACHE",
+			"id": "placeholder"
+		}
+	],
+	// D1: best-effort audit/usage metadata
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_id": "placeholder",
+			"database_name": "edge-soc-mcp-db"
+		}
+	],
+	// R2: slim corpus indexes (ATT&CK, Sigma, LOLBAS, GTFOBins, HijackLibs, WADComs, SSLBL feeds)
+	"r2_buckets": [
+		{
+			"binding": "CORPORA",
+			"bucket_name": "edge-soc-mcp-corpora"
+		}
+	],
+	// Cron: refresh catalogs/corpora every 6 hours
+	"triggers": {
+		"crons": [
+			"0 */6 * * *"
+		]
+	}
 }
