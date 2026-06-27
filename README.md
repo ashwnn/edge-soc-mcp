@@ -7,8 +7,6 @@ A Cloudflare Workers [MCP](https://modelcontextprotocol.io) server that puts a S
 ![MCP](https://img.shields.io/badge/Model_Context_Protocol-1.x-black)
 ![Free tier](https://img.shields.io/badge/runs_on-free_tier-brightgreen)
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ashwnn/edge-soc-mcp)
-
 ## Why it's built this way
 
 - **One tool per task, not one tool per vendor.** `ip_lookup` fans out across AbuseIPDB, GreyNoise, Shodan, IPinfo, and more, then returns a single verdict instead of five raw API payloads for you to reconcile.
