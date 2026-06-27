@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "wrangler types && tsc --noEmit",
     "test": "bun test",
     "cf-typegen": "wrangler types",
     "seed": "bun run scripts/seed-corpora.ts"
@@ -18,7 +18,6 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.20",
-    "@cloudflare/workers-types": "^4.20260627.1",
     "@types/bun": "^1.3.14",
     "@types/node": "^26.0.1",
     "typescript": "^6.0.3",

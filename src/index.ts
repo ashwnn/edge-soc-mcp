@@ -20,7 +20,7 @@ import { refreshScheduledFeeds } from "./corpora/refresh.js";
 
 export interface Env {
   // Bindings
-  MCP_OBJECT: DurableObjectNamespace;
+  MCP_OBJECT: DurableObjectNamespace<EdgeSocMCP>;
   CACHE: KVNamespace;
   DB: D1Database;
   CORPORA: R2Bucket;
