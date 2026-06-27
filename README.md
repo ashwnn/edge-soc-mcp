@@ -72,6 +72,10 @@ Each tool emits the same normalized envelope, keeping the verdict separate from 
 
 ## Quickstart
 
+New to Cloudflare? Follow [SETUP.md](SETUP.md) for a step-by-step walkthrough covering account creation, resource provisioning, and client configuration.
+
+The condensed path for developers already familiar with Wrangler:
+
 ```bash
 # 1. Install
 bun install

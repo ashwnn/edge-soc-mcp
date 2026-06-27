@@ -1,0 +1,337 @@
+# Setup Guide
+
+This guide walks through deploying edge-soc-mcp from scratch. No prior Cloudflare or Wrangler experience is assumed.
+
+---
+
+## What you need before starting
+
+- A computer running Windows, macOS, or Linux
+- [Git](https://git-scm.com/downloads) installed
+- A terminal (Command Prompt, PowerShell, or Terminal.app)
+- About 20 minutes
+
+---
+
+## Step 1 - Create a free Cloudflare account
+
+Go to [https://dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up) and register. The free plan covers everything this project uses: Workers, KV, D1, R2, Durable Objects, and cron triggers. No credit card is required to sign up, but you will need to add a payment method in Step 6 before R2 storage will work (Cloudflare uses it to prevent abuse, not to charge you at free-tier usage levels).
+
+---
+
+## Step 2 - Install Bun
+
+Bun is a fast JavaScript runtime that also acts as the package manager for this project.
+
+**Windows (PowerShell):**
+```powershell
+powershell -c "irm bun.sh/install.ps1 | iex"
+```
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+After the installer finishes, close and reopen your terminal, then confirm it works:
+
+```bash
+bun --version
+```
+
+You should see a version number like `1.x.x`. Full installation docs are at [https://bun.sh/docs/installation](https://bun.sh/docs/installation).
+
+---
+
+## Step 3 - Clone the repository
+
+Run the following in your terminal. This downloads the project to a folder called `edge-soc-mcp` in your current directory.
+
+```bash
+git clone https://github.com/ashwnn/edge-soc-mcp.git
+cd edge-soc-mcp
+```
+
+---
+
+## Step 4 - Install dependencies
+
+Inside the project folder, run:
+
+```bash
+bun install
+```
+
+This downloads all the required packages. It should finish in a few seconds.
+
+---
+
+## Step 5 - Log in to Cloudflare
+
+This command opens a browser window where you authorize Wrangler (the Cloudflare CLI tool bundled with this project) to act on your account:
+
+```bash
+bun x wrangler login
+```
+
+A browser tab will open at the Cloudflare authorization page. Click **Allow**. Once you see "You have granted authorization to Wrangler", return to your terminal. Wrangler docs for this step: [https://developers.cloudflare.com/workers/wrangler/commands/#login](https://developers.cloudflare.com/workers/wrangler/commands/#login).
+
+---
+
+## Step 6 - Enable R2 in the Cloudflare dashboard
+
+Before creating any resources, you need to enable the R2 storage service on your account. R2 is free up to 10 GB/month, but Cloudflare requires a payment method on file before activating it.
+
+1. Go to [https://dash.cloudflare.com](https://dash.cloudflare.com) and log in.
+2. Click **R2 Object Storage** in the left sidebar.
+3. Follow the prompt to add a payment method.
+4. Once R2 shows as active, return to your terminal.
+
+R2 documentation: [https://developers.cloudflare.com/r2/get-started/](https://developers.cloudflare.com/r2/get-started/)
+
+---
+
+## Step 7 - Create the three backing resources
+
+Run each command below one at a time. After each one, the terminal will print some details including an **ID** or **database_id** - you will need to copy these in the next step.
+
+**KV namespace** (a key-value cache store):
+```bash
+bun x wrangler kv namespace create CACHE
+```
+
+The output will look like this. Copy the `id` value:
+```
+Add the following to your configuration file in your kv_namespaces array:
+{ binding = "CACHE", id = "a1b2c3d4e5f6..." }
+```
+
+**D1 database** (a SQLite database):
+```bash
+bun x wrangler d1 create edge_soc
+```
+
+The output will look like this. Copy the `database_id` value:
+```
+Successfully created DB 'edge_soc'
+
+[[d1_databases]]
+binding = "DB"
+database_name = "edge_soc"
+database_id = "a1b2c3d4-e5f6-..."
+```
+
+**R2 bucket** (object storage for corpus files):
+```bash
+bun x wrangler r2 bucket create edge-soc-corpora
+```
+
+This one does not return an ID; just confirm it says "Created bucket 'edge-soc-corpora'".
+
+KV docs: [https://developers.cloudflare.com/kv/get-started/](https://developers.cloudflare.com/kv/get-started/)  
+D1 docs: [https://developers.cloudflare.com/d1/get-started/](https://developers.cloudflare.com/d1/get-started/)
+
+---
+
+## Step 8 - Paste the IDs into wrangler.jsonc
+
+Open the file `wrangler.jsonc` in the project folder with any text editor (Notepad, VS Code, TextEdit, etc.).
+
+Find the `kv_namespaces` section and replace `"placeholder"` with the KV namespace ID you copied:
+
+**Before:**
+```jsonc
+"kv_namespaces": [
+  {
+    "binding": "CACHE",
+    "id": "placeholder"
+  }
+],
+```
+
+**After (your actual ID will differ):**
+```jsonc
+"kv_namespaces": [
+  {
+    "binding": "CACHE",
+    "id": "a1b2c3d4e5f6abc123456789abcdef01"
+  }
+],
+```
+
+Next, find the `d1_databases` section and replace the `"database_id"` placeholder:
+
+**Before:**
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_id": "placeholder",
+    "database_name": "edge_soc"
+  }
+],
+```
+
+**After:**
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "database_name": "edge_soc"
+  }
+],
+```
+
+Save the file.
+
+---
+
+## Step 9 - Generate TypeScript types (optional but recommended)
+
+This step generates type definitions that match your Cloudflare resource bindings. It is not strictly required to deploy, but it catches configuration mismatches early:
+
+```bash
+bun x wrangler types
+```
+
+---
+
+## Step 10 - Add API secrets (optional)
+
+The server deploys and runs without any API keys. Sources that require a key simply report `auth_missing` and are skipped. Adding keys unlocks more data for each tool.
+
+For each key you want to add, run the command below and paste the key when prompted. Nothing is echoed to the screen while you type.
+
+```bash
+bun x wrangler secret put ABUSEIPDB_API_KEY
+```
+
+Available secrets and where to get each key:
+
+| Secret name | Where to register |
+|---|---|
+| `MCP_AUTH_TOKEN` | Any string you choose - protects your `/mcp` endpoint with a bearer token |
+| `ABUSEIPDB_API_KEY` | [https://www.abuseipdb.com/register](https://www.abuseipdb.com/register) |
+| `ABUSE_CH_AUTH_KEY` | [https://auth.abuse.ch/](https://auth.abuse.ch/) (covers URLhaus, ThreatFox, MalwareBazaar, YARAify) |
+| `GREYNOISE_API_KEY` | [https://www.greynoise.io/](https://www.greynoise.io/) |
+| `IPINFO_TOKEN` | [https://ipinfo.io/signup](https://ipinfo.io/signup) |
+| `URLSCAN_API_KEY` | [https://urlscan.io/user/signup](https://urlscan.io/user/signup) |
+| `OTX_API_KEY` | [https://otx.alienvault.com/](https://otx.alienvault.com/) |
+| `NVD_API_KEY` | [https://nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key) |
+| `PULSEDIVE_API_KEY` | [https://pulsedive.com/](https://pulsedive.com/) |
+| `HUDSONROCK_API_KEY` | [https://www.hudsonrock.com/](https://www.hudsonrock.com/) |
+| `HIBP_API_KEY` | [https://haveibeenpwned.com/API/Key](https://haveibeenpwned.com/API/Key) (paid) |
+| `VT_API_KEY` | [https://www.virustotal.com/](https://www.virustotal.com/) (non-commercial) |
+| `SPUR_TOKEN` | [https://spur.us/](https://spur.us/) (paid) |
+
+Secrets documentation: [https://developers.cloudflare.com/workers/configuration/secrets/](https://developers.cloudflare.com/workers/configuration/secrets/)
+
+---
+
+## Step 11 - Seed corpus data into R2
+
+Several tools rely on pre-loaded data files in R2: ATT&CK techniques, Sigma rules, LOLBAS, GTFOBins, HijackLibs, WADComs, and D3FEND. This command downloads and uploads all of them:
+
+```bash
+bun run seed
+```
+
+The script will print progress as it downloads and uploads each corpus. This may take a few minutes on a slow connection because some upstream files (particularly ATT&CK STIX and the Sigma rule set) are large. You only need to run this once after initial setup; the cron job handles time-sensitive feed updates automatically.
+
+---
+
+## Step 12 - Deploy
+
+```bash
+bun x wrangler deploy
+```
+
+Wrangler will bundle the worker, run the Durable Object migration, and upload everything to Cloudflare. When it finishes, it prints a URL like:
+
+```
+Published edge-soc-mcp (x.xx sec)
+  https://edge-soc-mcp.<your-subdomain>.workers.dev
+```
+
+Copy that URL. You will use it to connect your MCP client.
+
+Workers deployment docs: [https://developers.cloudflare.com/workers/get-started/guide/](https://developers.cloudflare.com/workers/get-started/guide/)
+
+---
+
+## Step 13 - Verify it is running
+
+Open your browser and go to:
+
+```
+https://edge-soc-mcp.<your-subdomain>.workers.dev/health
+```
+
+You should see a JSON response that looks like this:
+
+```json
+{
+  "status": "ok",
+  "server": "edge-soc-mcp",
+  "corpora": { "loaded": true, "count": 3000 },
+  "generated_at": "2026-..."
+}
+```
+
+If `corpora.loaded` is `false`, the seed script from Step 11 did not complete successfully. Re-run `bun run seed` and then redeploy.
+
+---
+
+## Step 14 - Connect an MCP client
+
+Add the following to your MCP client's server configuration. Replace the URL with the one from Step 12, and replace `your-token` with the value you set for `MCP_AUTH_TOKEN` (or remove the `headers` key entirely if you did not set one).
+
+```json
+{
+  "type": "streamable-http",
+  "url": "https://edge-soc-mcp.<your-subdomain>.workers.dev/mcp",
+  "headers": {
+    "Authorization": "Bearer your-token"
+  }
+}
+```
+
+For legacy SSE clients, change the path to `/sse`:
+
+```json
+{
+  "type": "sse",
+  "url": "https://edge-soc-mcp.<your-subdomain>.workers.dev/sse",
+  "headers": {
+    "Authorization": "Bearer your-token"
+  }
+}
+```
+
+---
+
+## Updating corpora data in the future
+
+The cron job handles feed refreshes (CISA KEV, OpenPhish, SSLBL) every 6 hours automatically. For the larger corpus files, run the seed script again and redeploy:
+
+```bash
+bun run seed
+bun x wrangler deploy
+```
+
+---
+
+## Troubleshooting
+
+**"Error: KV namespace not found"** - Double-check that the ID in `wrangler.jsonc` matches exactly what was printed in Step 7. There are no spaces or extra characters in the ID.
+
+**"Error: D1 database not found"** - Same as above; verify the `database_id` in `wrangler.jsonc`. D1 IDs are UUID-formatted (hyphenated).
+
+**"R2 bucket does not exist"** - Confirm that R2 is active on your account (Step 6) and that the bucket creation in Step 7 succeeded without errors.
+
+**The `/health` endpoint returns `corpora: { loaded: false }`** - The R2 seed did not complete. Run `bun run seed` again, watch for any error messages, and redeploy afterward.
+
+**Worker returns 401 Unauthorized** - You set `MCP_AUTH_TOKEN` but are not sending the `Authorization: Bearer <token>` header in your client config. Add the header or remove the secret to open access.
+
+Wrangler error reference: [https://developers.cloudflare.com/workers/observability/errors/](https://developers.cloudflare.com/workers/observability/errors/)
