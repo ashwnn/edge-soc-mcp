@@ -8,8 +8,14 @@ import { slimLolbas } from "./slim/lolbas.js";
 import { slimSigmaZip } from "./slim/sigma.js";
 import { slimWadcomsZip } from "./slim/wadcoms.js";
 
-const bucket = process.env.R2_BUCKET_NAME ?? "edge-soc-corpora";
+type SigmaReleaseAsset = {
+  name?: string;
+  browser_download_url?: string;
+};
+
+const bucket = process.env.R2_BUCKET_NAME ?? "edge-soc-mcp-corpora";
 const tempDir = join(process.cwd(), ".tmp", "seed-corpora");
+const wadcomsZipUrl = "https://codeload.github.com/WADComs/WADComs.github.io/zip/refs/heads/master";
 
 async function fetchJson(url: string): Promise<unknown> {
   const response = await fetch(url);
@@ -42,6 +48,7 @@ async function uploadJson(key: string, value: unknown): Promise<void> {
     `${bucket}/${key}`,
     "--file",
     path,
+    "--remote",
   ], {
     stdout: "inherit",
     stderr: "inherit",
@@ -52,18 +59,32 @@ async function uploadJson(key: string, value: unknown): Promise<void> {
   }
 }
 
-async function latestSigmaZipUrl(): Promise<string> {
-  const release = (await fetchJson("https://api.github.com/repos/SigmaHQ/sigma/releases/latest")) as {
-    assets?: Array<{ browser_download_url?: string }>;
-  };
-  const asset = release.assets?.find((entry) => entry.browser_download_url?.includes("sigma_all_rules_"));
+export function resolveSigmaZipUrl(assets: SigmaReleaseAsset[] | undefined): string {
+  const asset = assets?.find((entry) => {
+    const name = entry.name?.toLowerCase();
+    const url = entry.browser_download_url?.toLowerCase();
+
+    return (
+      (name?.startsWith("sigma_all_rules") && name.endsWith(".zip")) ||
+      (url?.includes("/sigma_all_rules") && url.endsWith(".zip"))
+    );
+  });
+
   if (!asset?.browser_download_url) {
     throw new Error("Could not find latest Sigma release asset");
   }
+
   return asset.browser_download_url;
 }
 
-async function main(): Promise<void> {
+async function latestSigmaZipUrl(): Promise<string> {
+  const release = (await fetchJson("https://api.github.com/repos/SigmaHQ/sigma/releases/latest")) as {
+    assets?: SigmaReleaseAsset[];
+  };
+  return resolveSigmaZipUrl(release.assets);
+}
+
+export async function main(): Promise<void> {
   await rm(tempDir, { recursive: true, force: true });
   await mkdir(tempDir, { recursive: true });
 
@@ -75,7 +96,7 @@ async function main(): Promise<void> {
       fetchJson("https://hijacklibs.net/api/hijacklibs.json"),
       fetchJson("https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack.json"),
       latestSigmaZipUrl(),
-      fetchBytes("https://github.com/WADComs/WADComs/archive/refs/heads/master.zip"),
+      fetchBytes(wadcomsZipUrl),
     ]);
 
   const sigmaZip = await fetchBytes(sigmaZipUrl);
@@ -108,4 +129,6 @@ async function main(): Promise<void> {
   console.log(`[seed-corpora] Uploaded ${manifest.entries.length} corpora to R2 bucket ${bucket}`);
 }
 
-void main();
+if (import.meta.main) {
+  await main();
+}
