@@ -15,7 +15,7 @@ export interface AuditEntry {
 
 /**
  * Write an audit entry to D1's `audit_log` table.
- * Errors are caught and swallowed — audit logging must never block a lookup.
+ * Errors are caught and swallowed - audit logging must never block a lookup.
  */
 export async function logAudit(
   env: { DB?: D1Database },
@@ -39,6 +39,6 @@ export async function logAudit(
       )
       .run();
   } catch {
-    // Intentionally swallowed — audit logging is best-effort
+    // Intentionally swallowed - audit logging is best-effort
   }
 }

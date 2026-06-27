@@ -1,5 +1,5 @@
 /**
- * edge-soc-mcp — Cloudflare Workers entry point.
+ * edge-soc-mcp - Cloudflare Workers entry point.
  *
  * Exports:
  *   - EdgeSocMCP (Durable Object): the McpAgent class
@@ -13,7 +13,7 @@ import { loadManifest } from "./corpora/loader.js";
 import { refreshScheduledFeeds } from "./corpora/refresh.js";
 
 // ---------------------------------------------------------------------------
-// Env type — mirrors wrangler.jsonc bindings + secrets.
+// Env type - mirrors wrangler.jsonc bindings + secrets.
 // The canonical source is the generated worker-configuration.d.ts;
 // we declare it here for IDE support before the first `wrangler types` run.
 // ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ function unauthorizedResponse(): Response {
 
 function checkAuth(request: Request, env: Env): boolean {
   if (!env.MCP_AUTH_TOKEN) {
-    // No token configured — open access (personal use)
+    // No token configured - open access (personal use)
     return true;
   }
   const authHeader = request.headers.get("Authorization") ?? "";
@@ -90,7 +90,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    // --- /health — unauthenticated status endpoint ---
+    // --- /health - unauthenticated status endpoint ---
     if (url.pathname === "/health") {
       const manifest = await loadManifest(env);
       const body = {
@@ -106,7 +106,7 @@ export default {
       });
     }
 
-    // --- /mcp — Streamable HTTP transport (auth-gated) ---
+    // --- /mcp - Streamable HTTP transport (auth-gated) ---
     if (url.pathname === "/mcp") {
       if (!checkAuth(request, env)) {
         return unauthorizedResponse();
@@ -114,7 +114,7 @@ export default {
       return EdgeSocMCP.serve("/mcp").fetch(request, env, ctx);
     }
 
-    // --- /sse — SSE transport for legacy clients (auth-gated) ---
+    // --- /sse - SSE transport for legacy clients (auth-gated) ---
     if (url.pathname === "/sse" || url.pathname.startsWith("/sse/")) {
       if (!checkAuth(request, env)) {
         return unauthorizedResponse();

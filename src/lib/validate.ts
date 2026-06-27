@@ -20,7 +20,7 @@ export function isIp(value: string): boolean {
   // IPv4: four octets 0-255
   const ipv4 =
     /^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
-  // IPv6: at least one colon, hex segments (simplified — rejects garbage)
+  // IPv6: at least one colon, hex segments (simplified - rejects garbage)
   const ipv6 = /^[0-9a-fA-F:]{2,39}$/;
   return ipv4.test(value) || (value.includes(":") && ipv6.test(value));
 }

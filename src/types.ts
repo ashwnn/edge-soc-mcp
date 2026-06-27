@@ -1,5 +1,5 @@
 /**
- * Normalized response envelope — the core contract.
+ * Normalized response envelope - the core contract.
  * Every tool returns an Envelope; the MCP handler emits it as both
  * pretty-printed text and structuredContent.
  */
@@ -36,7 +36,7 @@ export interface SourceResult {
   status: SourceStatus;
   /** One-line human summary */
   summary?: string;
-  /** Normalized per-source fields — NOT a raw API dump */
+  /** Normalized per-source fields - NOT a raw API dump */
   data?: unknown;
   /** e.g. ["non-commercial use only"] */
   restrictions?: string[];
@@ -48,7 +48,7 @@ export interface SourceResult {
 
 export interface Verdict {
   classification: "malicious" | "suspicious" | "benign" | "noise" | "unknown";
-  /** 0–100 risk score, when meaningful */
+  /** 0-100 risk score, when meaningful */
   score?: number;
   confidence: "low" | "medium" | "high";
   /** Human-readable rollup */

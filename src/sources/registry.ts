@@ -1,5 +1,5 @@
 /**
- * Source registry — metadata for every data source.
+ * Source registry - metadata for every data source.
  *
  * This file is pure metadata; it does NOT perform any network lookups.
  * Actual lookups live in src/sources/<name>.ts (implemented in P1+).

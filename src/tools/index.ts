@@ -69,7 +69,7 @@ function registerHealth(server: McpServer, env: ToolEnv): void {
         server: "edge-soc-mcp",
         corpora: corpusSummary
           ? { loaded: true, entries: corpusSummary }
-          : { loaded: false, note: "Manifest not found — run seed-corpora.ts" },
+          : { loaded: false, note: "Manifest not found - run seed-corpora.ts" },
         generated_at: new Date().toISOString(),
       };
 

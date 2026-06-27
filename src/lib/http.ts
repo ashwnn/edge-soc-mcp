@@ -4,7 +4,7 @@
  * - AbortController timeout (default 8000 ms, configurable).
  * - One retry on network error or 5xx.
  * - Default User-Agent header.
- * - Returns a discriminated result — NEVER throws.
+ * - Returns a discriminated result - NEVER throws.
  */
 
 const DEFAULT_TIMEOUT_MS = 8_000;

@@ -5,7 +5,7 @@
 import { sha256hex } from "./hash.js";
 
 // ---------------------------------------------------------------------------
-// In-memory memo — persists for the lifetime of a warm isolate.
+// In-memory memo - persists for the lifetime of a warm isolate.
 // Used to avoid re-parsing large R2 corpora on every request.
 // ---------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ export async function cacheKey(
  * 1. GET the key from KV; if present, parse and return the cached value.
  * 2. Otherwise call `fn()`, PUT the result with `expirationTtl`, return it.
  *
- * Never throws — if KV operations fail, falls through to `fn()`.
+ * Never throws - if KV operations fail, falls through to `fn()`.
  */
 export async function withCache<T>(
   kv: KVNamespace,
@@ -64,7 +64,7 @@ export async function withCache<T>(
       return JSON.parse(cached) as T;
     }
   } catch {
-    // KV read failure — proceed to fn()
+    // KV read failure - proceed to fn()
   }
 
   const value = await fn();

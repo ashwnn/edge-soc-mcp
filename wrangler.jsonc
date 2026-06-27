@@ -1,5 +1,5 @@
 {
-  // edge-soc-mcp — Wrangler configuration
+  // edge-soc-mcp - Wrangler configuration
   // Before deploying: replace all "placeholder" IDs with real resource IDs.
   // Create resources with: wrangler kv namespace create CACHE
   //                        wrangler d1 create edge_soc
@@ -10,7 +10,7 @@
   "compatibility_date": "2025-05-01",
   "compatibility_flags": ["nodejs_compat"],
 
-  // Durable Object binding — McpAgent requires new_sqlite_classes migration
+  // Durable Object binding - McpAgent requires new_sqlite_classes migration
   "durable_objects": {
     "bindings": [
       {

@@ -66,7 +66,7 @@ export async function loadManifest(env: {
 // ---------------------------------------------------------------------------
 // Internal memo helpers (synchronous wrappers around the module-level Map)
 // We can't use the generic memo() from cache.ts directly here because
-// the R2 fetch is async — we need to check/set synchronously around the await.
+// the R2 fetch is async - we need to check/set synchronously around the await.
 // ---------------------------------------------------------------------------
 
 const _cache = new Map<string, unknown>();

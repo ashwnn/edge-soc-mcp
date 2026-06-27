@@ -129,7 +129,7 @@ describe("isEmail", () => {
 });
 
 // ---------------------------------------------------------------------------
-// detectObservable — integration
+// detectObservable - integration
 // ---------------------------------------------------------------------------
 describe("detectObservable", () => {
   test("IP", () => expect(detectObservable("8.8.8.8")).toBe("ip"));
