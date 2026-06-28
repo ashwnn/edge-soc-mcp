@@ -81,12 +81,15 @@ bun install
 # 2. Log in and create backing resources
 bun x wrangler login
 bun x wrangler kv namespace create CACHE
+bun x wrangler kv namespace create OAUTH_KV
 bun x wrangler d1 create edge-soc-mcp-db
 bun x wrangler r2 bucket create edge-soc-mcp-corpora
 
-# 3. Paste the returned IDs into wrangler.jsonc, then generate types
+# 3. Create your local config from the template (wrangler.jsonc is gitignored),
+#    paste the returned IDs into it, then generate types.
 # wrangler types generates worker-configuration.d.ts from your bindings.
 # Re-run it any time wrangler.jsonc changes.
+cp wrangler.jsonc.example wrangler.jsonc
 bun x wrangler types
 
 # 4. Seed corpora into R2 and deploy
@@ -96,12 +99,19 @@ bun x wrangler deploy
 
 > R2 must be enabled in the Cloudflare dashboard before uploads will work.
 
-### Optional secrets
+### Required secret
 
-The server runs without any keys. Each one just unlocks more sources. Set the ones you want:
+Set `MCP_AUTH_TOKEN` to a secret string of your choice. This becomes the **password you paste on the OAuth consent screen** when connecting a client for the first time. Without it the server will refuse all authorization attempts.
 
 ```bash
-bun x wrangler secret put MCP_AUTH_TOKEN      # bearer guard for /mcp and /sse
+bun x wrangler secret put MCP_AUTH_TOKEN
+```
+
+### Optional API secrets
+
+Each key unlocks additional threat-intel sources. The server degrades cleanly without them.
+
+```bash
 bun x wrangler secret put ABUSEIPDB_API_KEY
 bun x wrangler secret put ABUSE_CH_AUTH_KEY   # URLhaus, ThreatFox, MalwareBazaar, YARAify
 bun x wrangler secret put GREYNOISE_API_KEY
@@ -118,17 +128,22 @@ bun x wrangler secret put VT_API_KEY
 
 ## Connecting an MCP client
 
-Point your client at the deployed `/mcp` URL as a streamable HTTP endpoint:
+### ChatGPT / Claude custom connectors (OAuth 2.1)
 
-```json
-{
-  "type": "streamable-http",
-  "url": "https://your-worker.your-subdomain.workers.dev/mcp",
-  "headers": { "Authorization": "Bearer your-token" }
-}
-```
+ChatGPT (Actions) and Claude (custom connectors) support OAuth 2.1 + PKCE natively. Point them at the worker URL and they will walk through the consent flow automatically:
 
-Legacy SSE clients can use `/sse`. If `MCP_AUTH_TOKEN` is set, both endpoints require `Authorization: Bearer <token>`.
+1. In the connector settings, enter your worker URL as the server URL (e.g. `https://edge-soc-mcp.<your-subdomain>.workers.dev`).
+2. The client will redirect you to `/authorize`, which shows a password prompt.
+3. Paste your `MCP_AUTH_TOKEN` value and click **Authorize**.
+4. The client receives an OAuth access token and connects.
+
+Dynamic client registration is supported at `/register`, so no manual client setup is required.
+
+### API clients (Bearer token)
+
+Clients that support Bearer tokens can use the OAuth-issued access token directly, or go through the authorization code flow programmatically. For quick CLI testing, initiate the OAuth flow manually to obtain a token.
+
+Legacy SSE clients can use `/sse` instead of `/mcp`.
 
 ## Local development
 

@@ -91,11 +91,11 @@ R2 documentation: [https://developers.cloudflare.com/r2/get-started/](https://de
 
 ---
 
-## Step 7 - Create the three backing resources
+## Step 7 - Create the four backing resources
 
 Run each command below one at a time. After each one, the terminal will print some details including an **ID** or **database_id** - you will need to copy these in the next step.
 
-**KV namespace** (a key-value cache store):
+**KV namespace** (short-TTL verdict cache and feed catalogs):
 ```bash
 bun x wrangler kv namespace create CACHE
 ```
@@ -104,6 +104,16 @@ The output will look like this. Copy the `id` value:
 ```
 Add the following to your configuration file in your kv_namespaces array:
 { binding = "CACHE", id = "a1b2c3d4e5f6..." }
+```
+
+**KV namespace** (OAuth token and grant storage):
+```bash
+bun x wrangler kv namespace create OAUTH_KV
+```
+
+The output has the same shape. Copy the `id` value:
+```
+{ binding = "OAUTH_KV", id = "b2c3d4e5f6a1..." }
 ```
 
 **D1 database** (a SQLite database):
@@ -135,26 +145,44 @@ D1 docs: [https://developers.cloudflare.com/d1/get-started/](https://developers.
 
 ## Step 8 - Paste the IDs into wrangler.jsonc
 
-Open the file `wrangler.jsonc` in the project folder with any text editor (Notepad, VS Code, TextEdit, etc.).
+The repo ships a `wrangler.jsonc.example` template. Copy it to `wrangler.jsonc` first — the real `wrangler.jsonc` is gitignored, so your resource IDs stay out of version control:
 
-Find the `kv_namespaces` section and replace `"placeholder"` with the KV namespace ID you copied:
+```bash
+cp wrangler.jsonc.example wrangler.jsonc
+```
+
+Open the new `wrangler.jsonc` in the project folder with any text editor (Notepad, VS Code, TextEdit, etc.).
+
+Find the `kv_namespaces` section and replace the placeholder IDs with the ones you copied:
 
 **Before:**
 ```jsonc
 "kv_namespaces": [
   {
     "binding": "CACHE",
-    "id": "placeholder"
+    "id": "REPLACE_WITH_CACHE_KV_ID",
+    "remote": true
+  },
+  {
+    "binding": "OAUTH_KV",
+    "id": "REPLACE_WITH_OAUTH_KV_ID",
+    "remote": true
   }
 ],
 ```
 
-**After (your actual ID will differ):**
+**After (your actual IDs will differ):**
 ```jsonc
 "kv_namespaces": [
   {
     "binding": "CACHE",
-    "id": "a1b2c3d4e5f6abc123456789abcdef01"
+    "id": "a1b2c3d4e5f6abc123456789abcdef01",
+    "remote": true
+  },
+  {
+    "binding": "OAUTH_KV",
+    "id": "b2c3d4e5f6a1abc123456789abcdef02",
+    "remote": true
   }
 ],
 ```
@@ -166,7 +194,7 @@ Next, find the `d1_databases` section and replace the `"database_id"` placeholde
 "d1_databases": [
   {
     "binding": "DB",
-    "database_id": "placeholder",
+    "database_id": "REPLACE_WITH_D1_DATABASE_ID",
     "database_name": "edge-soc-mcp-db"
   }
 ],
@@ -197,7 +225,17 @@ bun x wrangler types
 
 ---
 
-## Step 10 - Add API secrets (optional)
+## Step 10 - Set secrets
+
+### Required secret
+
+`MCP_AUTH_TOKEN` is the password you will paste on the OAuth consent screen when connecting a client. Choose any secure string (a long random value is recommended). The server refuses all authorization attempts if this secret is not set.
+
+```bash
+bun x wrangler secret put MCP_AUTH_TOKEN
+```
+
+### Optional API secrets
 
 The server deploys and runs without any API keys. Sources that require a key simply report `auth_missing` and are skipped. Adding keys unlocks more data for each tool.
 
@@ -207,11 +245,10 @@ For each key you want to add, run the command below and paste the key when promp
 bun x wrangler secret put ABUSEIPDB_API_KEY
 ```
 
-Available secrets and where to get each key:
+Available optional secrets and where to get each key:
 
 | Secret name | Where to register |
 |---|---|
-| `MCP_AUTH_TOKEN` | Any string you choose - protects your `/mcp` endpoint with a bearer token |
 | `ABUSEIPDB_API_KEY` | [https://www.abuseipdb.com/register](https://www.abuseipdb.com/register) |
 | `ABUSE_CH_AUTH_KEY` | [https://auth.abuse.ch/](https://auth.abuse.ch/) (covers URLhaus, ThreatFox, MalwareBazaar, YARAify) |
 | `GREYNOISE_API_KEY` | [https://www.greynoise.io/](https://www.greynoise.io/) |
@@ -285,26 +322,35 @@ If `corpora.loaded` is `false`, the seed script from Step 11 did not complete su
 
 ## Step 14 - Connect an MCP client
 
-Add the following to your MCP client's server configuration. Replace the URL with the one from Step 12, and replace `your-token` with the value you set for `MCP_AUTH_TOKEN` (or remove the `headers` key entirely if you did not set one).
+The server uses OAuth 2.1 + PKCE. ChatGPT (Actions) and Claude (custom connectors) handle the OAuth flow automatically.
 
-```json
-{
-  "type": "streamable-http",
-  "url": "https://edge-soc-mcp.<your-subdomain>.workers.dev/mcp",
-  "headers": {
-    "Authorization": "Bearer your-token"
-  }
-}
+### ChatGPT or Claude custom connector
+
+1. In your client's connector or plugin settings, enter the worker URL as the server URL:
+   ```
+   https://edge-soc-mcp.<your-subdomain>.workers.dev
+   ```
+2. The client will redirect you to `/authorize`, which shows a password prompt titled **"edge-soc-mcp — connect"**.
+3. Paste the value of your `MCP_AUTH_TOKEN` secret and click **Authorize**.
+4. The client receives an OAuth access token and connects. You will not need to paste the token again for this client unless the token is revoked.
+
+Dynamic client registration is supported at `/register`, so no manual OAuth client setup is required.
+
+### MCP CLI or other clients
+
+For clients that support streamable HTTP and can initiate an OAuth flow, use the base URL:
+```
+https://edge-soc-mcp.<your-subdomain>.workers.dev
 ```
 
-For legacy SSE clients, change the path to `/sse`:
+For legacy SSE clients that accept a token directly, complete the OAuth flow once (e.g. via a browser at `/authorize`) to obtain an access token, then configure the client:
 
 ```json
 {
   "type": "sse",
   "url": "https://edge-soc-mcp.<your-subdomain>.workers.dev/sse",
   "headers": {
-    "Authorization": "Bearer your-token"
+    "Authorization": "Bearer <oauth-access-token>"
   }
 }
 ```
@@ -332,6 +378,6 @@ bun x wrangler deploy
 
 **The `/health` endpoint returns `corpora: { loaded: false }`** - The R2 seed did not complete. Run `bun run seed` again, watch for any error messages, and redeploy afterward.
 
-**Worker returns 401 Unauthorized** - You set `MCP_AUTH_TOKEN` but are not sending the `Authorization: Bearer <token>` header in your client config. Add the header or remove the secret to open access.
+**Worker returns 401 Unauthorized** - The OAuth access token is missing or expired. Re-initiate the OAuth flow from your client to obtain a fresh token. If you see "MCP_AUTH_TOKEN is not configured", set the secret with `bun x wrangler secret put MCP_AUTH_TOKEN` and redeploy.
 
 Wrangler error reference: [https://developers.cloudflare.com/workers/observability/errors/](https://developers.cloudflare.com/workers/observability/errors/)

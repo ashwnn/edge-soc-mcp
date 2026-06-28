@@ -4,3 +4,5 @@ bun.lock
 .dev.vars.example
 dist/
 *.d.ts
+.tmp
+wrangler.jsonc

@@ -1,7 +1,9 @@
 {
-	// edge-soc-mcp - Wrangler configuration
-	// Before deploying: replace all "placeholder" IDs with real resource IDs.
+	// edge-soc-mcp - Wrangler configuration TEMPLATE
+	// Copy this file to `wrangler.jsonc` and replace the REPLACE_WITH_* IDs with
+	// your own resource IDs. `wrangler.jsonc` is gitignored so your IDs stay private.
 	// Create resources with: wrangler kv namespace create CACHE
+	//                        wrangler kv namespace create OAUTH_KV
 	//                        wrangler d1 create edge-soc-mcp-db
 	//                        wrangler r2 bucket create edge-soc-mcp-corpora
 	//                        wrangler secret put <SECRET_NAME>
@@ -30,25 +32,34 @@
 		}
 	],
 	// KV: short-TTL verdict cache + feed catalogs (CISA KEV, OpenPhish set)
+	// OAUTH_KV: required by @cloudflare/workers-oauth-provider for token/grant storage
 	"kv_namespaces": [
 		{
 			"binding": "CACHE",
-			"id": "placeholder"
+			"id": "REPLACE_WITH_CACHE_KV_ID",
+			"remote": true
+		},
+		{
+			"binding": "OAUTH_KV",
+			"id": "REPLACE_WITH_OAUTH_KV_ID",
+			"remote": true
 		}
 	],
 	// D1: best-effort audit/usage metadata
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_id": "placeholder",
-			"database_name": "edge-soc-mcp-db"
+			"database_name": "edge-soc-mcp-db",
+			"database_id": "REPLACE_WITH_D1_DATABASE_ID",
+			"remote": true
 		}
 	],
 	// R2: slim corpus indexes (ATT&CK, Sigma, LOLBAS, GTFOBins, HijackLibs, WADComs, SSLBL feeds)
 	"r2_buckets": [
 		{
 			"binding": "CORPORA",
-			"bucket_name": "edge-soc-mcp-corpora"
+			"bucket_name": "edge-soc-mcp-corpora",
+			"remote": true
 		}
 	],
 	// Cron: refresh catalogs/corpora every 6 hours
